@@ -1,0 +1,338 @@
+================================================================================
+  AGSG CCF FE SCRAPER — User Guide
+  Version: May 2026
+  Author: Kefren68
+================================================================================
+
+WHAT IS THIS?
+-------------
+This tool downloads boxart, video snaps, screenshots, marquees, 3dboxes, manuals and game metadata from ScreenScraper.fr
+for use with the AGSG CCF FE game launcher. It scans your games folders, queries
+the ScreenScraper API for each ROM, and saves:
+
+  • boxart/         — cover art (PNG)
+  • videos/         — gameplay video snaps (MP4)
+  • screenshots/    — in-game screenshots (PNG)
+  • bezels/         — 16:9 bezels (PNG)
+  • marquees/       — wheel logos (PNG)
+  • 3dboxes/        — 3D box art (PNG)
+  • manuals/        — game manuals (PDF)
+  • gamelist.xml    — metadata file read by the launcher
+
+
+REQUIREMENTS
+------------
+  • Python 3.8 or newer
+  • A free ScreenScraper account: https://www.screenscraper.fr/membreinscription.php
+
+
+INSTALLING PYTHON AND DEPENDENCIES
+------------------------------------
+
+  ── Linux (Debian / Ubuntu / Mint) ──────────────────────────────────────────
+
+  Python 3 is usually pre-installed. If not:
+      sudo apt update && sudo apt install python3 python3-pip
+
+  Install the required library:
+      sudo apt install python3-requests
+      # or with pip:
+      pip3 install requests
+
+  For SSH remote-device scraping (optional):
+      sudo apt install python3-paramiko
+
+
+  ── Linux (Fedora / RHEL / CentOS) ──────────────────────────────────────────
+
+      sudo dnf install python3 python3-pip python3-requests
+      sudo dnf install python3-paramiko          # optional, for SSH
+
+
+  ── Linux (Arch / Manjaro) ───────────────────────────────────────────────────
+
+      sudo pacman -S python python-pip python-requests
+      sudo pacman -S python-paramiko             # optional, for SSH
+
+
+  ── macOS ────────────────────────────────────────────────────────────────────
+
+  Install Python 3 and the required libraries via Homebrew (recommended):
+      brew install python
+      brew install python-requests
+      brew install python-paramiko               # optional, for SSH
+
+  Using Homebrew avoids the "externally-managed-environment" error that
+  occurs with pip3 on macOS 13 Ventura and later.
+
+  Alternative — if you prefer pip3, use a virtual environment:
+      python3 -m venv ~/scraper-env
+      source ~/scraper-env/bin/activate
+      pip3 install requests
+      pip3 install paramiko                      # optional, for SSH
+      python3 scraper_gui.py                     # run inside the venv
+
+  ⚠ Do NOT run  pip3 install requests  without a venv on macOS 13+.
+    macOS protects its system Python — pip3 will fail with:
+    "error: externally-managed-environment"
+
+
+  ── Windows ──────────────────────────────────────────────────────────────────
+
+  1. Download and install Python 3 from https://www.python.org/downloads/
+     ⚠ During installation tick "Add Python to PATH".
+
+  2. Open a Command Prompt (Win+R → cmd) and run:
+      pip install requests
+      pip install paramiko                       # optional, for SSH
+
+  3. Launch the scraper:
+      python scraper_gui.py
+     (or double-click scraper_gui.py if .py files are associated with Python)
+
+Files needed (must be in the same folder):
+  scraper_gui.py               — the graphical interface (launch this)
+  scraper.py                   — the core scraper engine
+  screenscraper_extensions.py  — ROM extension database
+
+
+QUICK START
+-----------
+1. Register a free account on https://www.screenscraper.fr
+2. Double-click  scraper_gui.py  (or run:  python3 scraper_gui.py)
+3. Click "Browse…" and select your games folder (the folder that contains
+   sub-folders for each system, e.g. /media/sdcard/roms/)
+4. Enter your ScreenScraper username and password
+5. Choose what to download (boxart, videos, etc.)
+6. Click "▶ Start scraping"
+
+
+GAMES FOLDER STRUCTURE
+-----------------------
+The scraper expects one sub-folder per system inside the games folder:
+
+  roms/
+  ├── snes/
+  │   ├── Super Mario World.sfc
+  │   └── Donkey Kong Country.sfc
+  ├── nes/
+  │   └── Super Mario Bros.nes
+  ├── sega genesis/
+  │   └── Sonic the Hedgehog.md
+  └── gameboy/
+      └── Tetris.gb
+
+ROMs can also be organised in sub-folders inside each system folder (e.g. by
+letter or region) — the scraper scans recursively and finds them automatically.
+
+Folder names are matched against the ScreenScraper system list automatically.
+Common names are recognised out of the box (see "System Auto-Detection" below).
+
+
+CREDENTIALS SECTION
+--------------------
+  Username        Your ScreenScraper login name (NOT your email address).
+  Password        Your ScreenScraper password.
+  Dev ID          Optional. Leave blank to use the built-in developer ID.
+  Dev Password    Optional. Leave blank to use the built-in developer password.
+
+  ☑ Remember credentials — saves username/password to scraper_gui.cfg next to
+    the script. The password is stored obfuscated (base64), not in plain text.
+    Uncheck this to prevent saving credentials to disk.
+
+
+OPTIONS
+-------
+  Boxart          Download cover art  (saved in  <system>/boxart/)
+  Video snaps     Download gameplay videos  (saved in  <system>/videos/)
+  Gamelist.xml    Write gamelist.xml for the launcher  (recommended: ON)
+  Bezels          Download 16:9 bezels  (saved in  <system>/bezels/)
+  Marquees        Download wheel logos  (saved in  <system>/marquees/)
+  3D box art      Download 3D box renders  (saved in  <system>/3dboxes/)
+  Screenshots     Download in-game screenshots  (saved in  <system>/screenshots/)
+  Manuals (PDF)   Download game manuals  (saved in  <system>/manuals/)
+  ─────────────────────────────────────────────────────────────────────────────
+  Overwrite       Re-download files that already exist on disk.
+                  Leave OFF to skip already-downloaded files (saves quota).
+  Verbose log     Show detailed API calls and match information in the log.
+
+
+FOLDER → SYSTEM MAPPING
+------------------------
+The "Folder → System" section lets you tell the scraper which ScreenScraper
+system corresponds to a folder when the folder name is non-standard.
+
+  Folder          Select a specific folder to scrape (or "— all —" for all).
+  System          Select the ScreenScraper system for that folder.
+
+When you select a folder, the scraper tries to auto-detect the correct system:
+  1. It first checks if you have previously assigned a system to this folder
+     (your choices are saved and restored automatically).
+  2. If not, it looks up the folder name in a built-in table of common names.
+  3. As a last resort, it uses fuzzy word-matching against all 245+ systems.
+
+The "↺" button refreshes the folder list if you have changed the games folder.
+
+TIP: If auto-detection picks the wrong system, just select the correct one from
+the dropdown. Your choice is saved and will be used automatically next time.
+
+
+ROM EXTENSION FILTER
+---------------------
+When a system is selected, a list of checkboxes appears showing all ROM file
+extensions recognised by ScreenScraper for that system (e.g. .sfc .smc .fig).
+
+  • All extensions are checked by default.
+  • Uncheck extensions you do NOT want to scan (e.g. uncheck .zip if you only
+    want to scrape uncompressed ROMs).
+  • Use "All" / "None" buttons to select or clear all at once.
+
+Your extension selection is saved per system and restored next time you select
+the same system. This is useful for excluding non-ROM files that may share the
+same folder (e.g. patches, save states).
+
+When no system is selected (auto-detect mode), the extension whitelist still
+applies based on the system detected at runtime.
+
+
+DAILY QUOTA
+-----------
+ScreenScraper limits the number of API calls per day per account:
+
+  • Free accounts:  ~10,000 requests/day (varies).
+  • The quota bar at the bottom of the window shows:
+      Scrape: X/Y  (N left)   — successful lookups used
+      KO: X/Y      (N left)   — failed lookups used (not-found also costs quota)
+
+  ⚠ When quota reaches 0 the scraper stops automatically.
+
+Tips to conserve quota:
+  • Use the ROM extension filter to avoid scanning non-ROM files.
+  • Leave "Overwrite" OFF — already-downloaded files are skipped for free.
+  • The scraper caches metadata in a hidden  .metadata/  folder inside each
+    system directory. Subsequent runs reuse this cache whenever possible.
+
+
+STOPPING THE SCRAPER
+---------------------
+Click "■ Stop" at any time. The scraper finishes processing the current ROM
+and then stops cleanly. No files are left in a corrupt state.
+
+
+METADATA CACHE
+--------------
+The scraper saves a JSON cache file in  <system>/.metadata/<rom_name>.json
+after each successful API call. This cache stores:
+  • Game name, description, release date, genre(s), developer, publisher,
+    number of players, rating
+  • URLs of all media files (for re-downloading without re-querying the API)
+
+On subsequent runs, cached games are skipped entirely (shown as "[cached]" in
+the log), saving both time and daily quota. Delete the .metadata/ folder to
+force a full re-scrape of that system.
+
+
+DEV ID / DEV PASSWORD
+---------------------
+These fields are for developers who have registered their own application on
+ScreenScraper. Leave them blank — the built-in ID (from the open-source
+Skyscraper project, MIT licence) will be used automatically.
+
+
+OUTPUT FILES
+------------
+After scraping, each system folder looks like this:
+
+  snes/
+  ├── Super Mario World.sfc
+  ├── gamelist.xml
+  ├── boxart/
+  │   └── Super Mario World.png
+  ├── videos/
+  │   └── Super Mario World.mp4
+  ├── screenshots/
+  │   └── Super Mario World.png
+  ├── 3dboxes/
+  │   └── Super Mario World.png
+  ├── marquees/
+  │   └── Super Mario World.png
+  ├── manuals/
+  │   └── Super Mario World.png
+  └── .metadata/
+      └── Super Mario World.json   (API cache, hidden folder)
+
+The gamelist.xml is read directly by the AGSG CCF FE launcher.
+For each game it contains all available metadata fields retrieved from
+ScreenScraper: name, description, release date, genre(s), developer,
+publisher, number of players, and rating (normalised to 0.0–1.0).
+
+
+SSH — SCRAPING A REMOTE DEVICE
+------------------------------
+The SSH section lets you scrape ROMs that live on a remote device (e.g. an
+AGS GSG connected to the same network) without mounting its SD card locally.
+
+Requires:  sudo apt install python3-paramiko   (Debian / Ubuntu)
+           pip install paramiko               (other systems)
+
+Setup:
+  1. Tick "Enable SSH".
+  2. Enter the device IP address in Host and leave Port as 22.
+  3. Username defaults to "root" — change if needed.
+  4. Key file: click "Browse..." to select your SSH private key file
+     (e.g. ~/.ssh/id_rsa or ~/.ssh/id_ed25519).
+     The matching public key must already be in the device's
+     ~/.ssh/authorized_keys file.
+  5. Click "► Connect". The status label turns green when connected.
+  6. Click "Browse..." next to the Games folder field — a dialog lets you
+     navigate the remote filesystem and select the roms folder.
+  7. Click "▶ Start scraping" as normal.
+
+How it works:
+  • The scraper lists ROMs on the remote device via SFTP.
+  • It creates a temporary staging folder on your local PC, populates it
+    with 0-byte ROM stubs, then runs the normal scrape against ScreenScraper.
+  • At the end it uploads all new files (boxart, videos, gamelist.xml ...)
+    back to the device and deletes the staging folder.
+  • ROM matching uses file size instead of MD5 (cannot hash remote files cheaply).
+
+All settings (host, port, username, key file, enabled state) are saved to
+scraper_gui.cfg and restored on the next launch.
+
+
+TROUBLESHOOTING
+---------------
+"No ScreenScraper mapping"
+    The folder name was not recognised. Select the correct system manually
+    in the "Folder → System" section.
+
+"[not found]" for every game
+    Check your username and password. Make sure you are using your USERNAME,
+    not your email address.
+
+Scraper stops immediately after starting
+    Your daily quota may be exhausted. Wait until midnight (Paris time) for
+    the quota to reset.
+
+Images look wrong / wrong game matched
+    ScreenScraper matches by filename and MD5 checksum. Renamed ROMs may not
+    match. Try renaming ROMs to their standard No-Intro names.
+
+"Import error: scraper.py not found"
+    All three files (scraper_gui.py, scraper.py, screenscraper_extensions.py)
+    must be in the same folder.
+
+
+FILES INCLUDED
+--------------
+  scraper_gui.py               Graphical launcher — run this.
+  scraper.py                   Scraper engine (do not delete).
+  screenscraper_extensions.py  ROM extension database for 245 systems.
+  requirements.txt             Python dependencies  (pip install -r requirements.txt)
+  scraper_gui.cfg              Auto-generated config file (created on first run).
+
+
+================================================================================
+  ScreenScraper.fr is a community-maintained database. Please support them at
+  https://www.screenscraper.fr/benevoles.php
+================================================================================
