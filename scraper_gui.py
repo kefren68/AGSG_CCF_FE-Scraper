@@ -43,6 +43,18 @@ CHECKBOX_KEYS = ("boxart", "videos", "gamelist", "bezels", "manuals",
                  "marquees", "3dboxes", "screenshots", "overwrite", "verbose",
                  "notfound_cache")
 
+# Color palette
+_CLR_BG     = "#2b2b2b"   # main background
+_CLR_BG2    = "#454545"   # entry / field background
+_CLR_FG     = "#ffffff"   # bright white text
+_CLR_FG_DIM = "#a0a0a0"   # dimmed / hint text
+_CLR_BORDER = "#505050"   # borders
+_CLR_ACCENT = "#4a9eff"   # blue  — buttons, links
+_CLR_TITLE  = "#f97316"   # orange — LabelFrame titles
+_CLR_START  = "#16a34a"   # green — Start button
+_CLR_STOP   = "#dc2626"   # red   — Stop button
+
+
 def encode_password(pw):
     return base64.b64encode(pw.encode()).decode() if pw else ""
 
@@ -97,7 +109,9 @@ class RemoteBrowserDialog(tk.Toplevel):
 
         frm_list = ttk.Frame(self)
         frm_list.pack(fill="both", expand=True, padx=8, pady=4)
-        self._lb = tk.Listbox(frm_list, selectmode="single", font=("Monospace", 9))
+        self._lb = tk.Listbox(frm_list, selectmode="single", font=("Monospace", 9),
+                              bg=_CLR_BG2, fg=_CLR_FG, selectbackground="#1e5096",
+                              selectforeground=_CLR_FG, borderwidth=0)
         sb = ttk.Scrollbar(frm_list, command=self._lb.yview)
         self._lb.configure(yscrollcommand=sb.set)
         sb.pack(side="right", fill="y")
@@ -174,7 +188,65 @@ class ScraperGUI(tk.Tk):
 
     # ------------------------------------------------------------------ UI --
 
+    def _setup_style(self):
+        s = ttk.Style()
+        s.theme_use("clam")
+        # Base dark theme
+        s.configure(".",
+                    background=_CLR_BG, foreground=_CLR_FG,
+                    fieldbackground=_CLR_BG2,
+                    selectbackground="#1e5096", selectforeground=_CLR_FG,
+                    bordercolor=_CLR_BORDER, darkcolor=_CLR_BG, lightcolor=_CLR_BG2,
+                    troughcolor=_CLR_BG2, insertcolor=_CLR_FG)
+        s.configure("TFrame",      background=_CLR_BG)
+        s.configure("TLabel",      background=_CLR_BG, foreground=_CLR_FG)
+        s.configure("TLabelframe", background=_CLR_BG, bordercolor=_CLR_BORDER)
+        s.configure("TLabelframe.Label",
+                    background=_CLR_BG, foreground=_CLR_TITLE, font=("", 9, "bold"))
+        s.configure("TEntry",
+                    fieldbackground=_CLR_BG2, foreground=_CLR_FG,
+                    insertcolor=_CLR_FG, selectbackground="#1e5096")
+        s.configure("TCombobox",
+                    fieldbackground=_CLR_BG2, foreground=_CLR_FG,
+                    selectbackground="#1e5096", selectforeground=_CLR_FG,
+                    arrowcolor=_CLR_FG)
+        s.map("TCombobox",
+              fieldbackground=[("readonly", _CLR_BG2)],
+              foreground=[("disabled", _CLR_FG_DIM)])
+        s.configure("TCheckbutton", background=_CLR_BG, foreground=_CLR_FG)
+        s.map("TCheckbutton",
+              background=[("active", _CLR_BG)],
+              foreground=[("disabled", _CLR_FG_DIM)])
+        s.configure("TSeparator",  background=_CLR_BORDER)
+        s.configure("TScrollbar",
+                    background=_CLR_BG2, troughcolor=_CLR_BG,
+                    arrowcolor=_CLR_FG, bordercolor=_CLR_BORDER)
+        s.configure("TProgressbar", background=_CLR_ACCENT, troughcolor=_CLR_BG2)
+        # Standard buttons: blue
+        s.configure("TButton",
+                    background=_CLR_ACCENT, foreground="#ffffff",
+                    relief="flat", borderwidth=0, padding=(6, 3))
+        s.map("TButton",
+              background=[("active", "#2a74cc"), ("disabled", "#555555")],
+              foreground=[("disabled", _CLR_FG_DIM)])
+        # Start button: green, larger
+        s.configure("Start.TButton",
+                    background=_CLR_START, foreground="#ffffff",
+                    font=("", 10, "bold"), padding=(14, 6))
+        s.map("Start.TButton",
+              background=[("active", "#15803d"), ("disabled", "#555555")],
+              foreground=[("disabled", _CLR_FG_DIM)])
+        # Stop button: red, larger
+        s.configure("Stop.TButton",
+                    background=_CLR_STOP, foreground="#ffffff",
+                    font=("", 10, "bold"), padding=(14, 6))
+        s.map("Stop.TButton",
+              background=[("active", "#b91c1c"), ("disabled", "#555555")],
+              foreground=[("disabled", _CLR_FG_DIM)])
+
     def _build_ui(self):
+        self._setup_style()
+        self.configure(bg=_CLR_BG)
         PAD = {"padx": 6, "pady": 2}
 
         # Two-column layout: controls on the left, log on the right
@@ -183,8 +255,10 @@ class ScraperGUI(tk.Tk):
         frm_left = ttk.Frame(_outer)
         frm_left.pack(side="left", fill="y")
         ttk.Separator(_outer, orient="vertical").pack(side="left", fill="y", padx=3)
-        _frm_right = ttk.LabelFrame(_outer, text="Log")
-        _frm_right.pack(side="left", fill="both", expand=True, padx=(0, 8), pady=8)
+        _frm_right_wrap = ttk.Frame(_outer)
+        _frm_right_wrap.pack(side="left", fill="both", expand=True, padx=(0, 8), pady=8)
+        _frm_right = ttk.LabelFrame(_frm_right_wrap, text="Log")
+        _frm_right.pack(fill="both", expand=True)
         self.log_text = tk.Text(_frm_right, state="disabled",
                                 bg="#1e1e1e", fg="#d4d4d4",
                                 font=("Monospace", 9), relief="flat")
@@ -192,6 +266,12 @@ class ScraperGUI(tk.Tk):
         self.log_text.configure(yscrollcommand=_log_scroll.set)
         _log_scroll.pack(side="right", fill="y")
         self.log_text.pack(fill="both", expand=True, padx=2, pady=2)
+        # ---- Quota indicator (below log) ----
+        frm_quota = ttk.Frame(_frm_right_wrap)
+        frm_quota.pack(fill="x", pady=(3, 0))
+        self.lbl_quota = ttk.Label(frm_quota, text="Daily quota: —",
+                                   foreground=_CLR_FG_DIM)
+        self.lbl_quota.pack(side="left")
 
         # ---- Games directory ----
         frm_dir = ttk.LabelFrame(frm_left, text="Games folder (SD card)")
@@ -246,7 +326,7 @@ class ScraperGUI(tk.Tk):
         # Bottom row: link + remember on the same line
         link = ttk.Label(frm_cred,
                          text="Use USERNAME (not email)  —  Register on screenscraper.fr",
-                         foreground="#0066cc", cursor="hand2")
+                         foreground=_CLR_ACCENT, cursor="hand2")
         link.grid(row=2, column=0, columnspan=3, sticky="w", padx=6, pady=(2, 4))
         link.bind("<Button-1>", lambda _: self._open_url(
             "https://www.screenscraper.fr/membreinscription.php"))
@@ -289,6 +369,23 @@ class ScraperGUI(tk.Tk):
         ttk.Checkbutton(frm_opt, text="Skip not found\n(save KO quota)",
                         variable=self.var_notfound_cache).grid(row=0, column=7, rowspan=2, sticky="w", **_OP)
 
+        # Language / Region selection
+        self.var_lang   = tk.StringVar(value="en")
+        self.var_region = tk.StringVar(value="eu")
+        ttk.Separator(frm_opt, orient="horizontal").grid(row=2, column=0, columnspan=8, sticky="ew", pady=(4, 2))
+        ttk.Label(frm_opt, text="Info language:").grid(row=3, column=0, sticky="e", **_OP)
+        ttk.Combobox(frm_opt, textvariable=self.var_lang, width=6, state="readonly",
+                     values=["en", "fr", "de", "es", "it", "pt", "nl", "ja", "ko", "ru", "zh"]).grid(
+            row=3, column=1, sticky="w", **_OP)
+        ttk.Label(frm_opt, text="(falls back to English if not available)",
+                  foreground=_CLR_FG_DIM).grid(row=3, column=2, columnspan=2, sticky="w", **_OP)
+        ttk.Label(frm_opt, text="Region:").grid(row=3, column=4, sticky="e", **_OP)
+        ttk.Combobox(frm_opt, textvariable=self.var_region, width=6, state="readonly",
+                     values=["eu", "us", "jp", "wor"]).grid(
+            row=3, column=5, sticky="w", **_OP)
+        ttk.Label(frm_opt, text="(for names/boxart/dates)",
+                  foreground=_CLR_FG_DIM).grid(row=3, column=6, columnspan=2, sticky="w", **_OP)
+
         # ---- SSH (remote device) ----
         frm_ssh = ttk.LabelFrame(frm_left, text="SSH — scrape games folder on a remote device (optional)")
         frm_ssh.pack(fill="x", padx=10, pady=2)
@@ -304,7 +401,7 @@ class ScraperGUI(tk.Tk):
         self._btn_ssh_disconnect = ttk.Button(frm_ssh, text="■ Disconnect",
                                               command=self._ssh_disconnect, state="disabled")
         self._btn_ssh_disconnect.grid(row=0, column=2, sticky="w", padx=(0, 4), pady=2)
-        self._lbl_ssh_status = ttk.Label(frm_ssh, text="● Not connected", foreground="#888888")
+        self._lbl_ssh_status = ttk.Label(frm_ssh, text="● Not connected", foreground=_CLR_FG_DIM)
         self._lbl_ssh_status.grid(row=0, column=3, sticky="w", padx=4, pady=2)
 
         ttk.Label(frm_ssh, text="Host:").grid(row=1, column=0, sticky="e", **PAD)
@@ -334,7 +431,7 @@ class ScraperGUI(tk.Tk):
         ttk.Label(frm_ssh,
             text="Authentication via SSH key only.  "
                  "After connecting, Browse… will navigate the remote device.",
-            foreground="#666666").grid(row=3, column=0, columnspan=6, sticky="w", padx=6, pady=(0, 4))
+            foreground=_CLR_FG_DIM).grid(row=3, column=0, columnspan=6, sticky="w", padx=6, pady=(0, 4))
 
         self._ssh_cred_widgets = [self._e_ssh_host, self._e_ssh_port,
                                   self._e_ssh_user,
@@ -377,7 +474,7 @@ class ScraperGUI(tk.Tk):
         # Placeholder label shown when no system is selected
         self._ext_label = ttk.Label(frm_ext,
                                     text="Select a system above to see its extensions.",
-                                    foreground="#888888")
+                                    foreground=_CLR_FG_DIM)
         self._ext_label.pack(padx=8, pady=4)
 
         # Grid of checkboxes (populated dynamically)
@@ -396,11 +493,12 @@ class ScraperGUI(tk.Tk):
         frm_btn.pack(fill="x", padx=10, pady=2)
 
         self.btn_start = ttk.Button(frm_btn, text="▶  Start scraping",
-                                    command=self._start)
+                                    command=self._start, style="Start.TButton")
         self.btn_start.pack(side="left", padx=(0, 6))
 
         self.btn_stop = ttk.Button(frm_btn, text="■  Stop",
-                                   command=self._stop, state="disabled")
+                                   command=self._stop, state="disabled",
+                                   style="Stop.TButton")
         self.btn_stop.pack(side="left")
 
         self.lbl_status = ttk.Label(frm_btn, text="Ready.")
@@ -410,12 +508,6 @@ class ScraperGUI(tk.Tk):
         self.progress = ttk.Progressbar(frm_left, mode="indeterminate")
         self.progress.pack(fill="x", padx=10, pady=(0, 2))
 
-        # ---- Quota indicator ----
-        frm_quota = ttk.Frame(frm_left)
-        frm_quota.pack(fill="x", padx=10, pady=(0, 2))
-        self.lbl_quota = ttk.Label(frm_quota, text="Daily quota: —",
-                                   foreground="#888888")
-        self.lbl_quota.pack(side="left")
 
     # ---------------------------------------------------------------- logic --
 
@@ -431,13 +523,13 @@ class ScraperGUI(tk.Tk):
         if cfg.get("password_enc"):
             self.var_pass.set(decode_password(cfg["password_enc"]))
         if cfg.get("devid"):
-            self._e_devid.config(foreground="black")
+            self._e_devid.config(foreground=_CLR_FG)
             self._e_devid.delete(0, "end")
             self._e_devid.insert(0, cfg["devid"])
         if cfg.get("devpass_enc"):
             decoded = decode_password(cfg["devpass_enc"])
             if decoded:
-                self._e_devpass.config(foreground="black")
+                self._e_devpass.config(foreground=_CLR_FG)
                 self._e_devpass.delete(0, "end")
                 self._e_devpass.insert(0, decoded)
         self.var_remember.set(cfg.get("remember", True))
@@ -446,6 +538,10 @@ class ScraperGUI(tk.Tk):
             val = cfg.get(f"opt_{key}")
             if val is not None:
                 getattr(self, f"var_{key}").set(bool(val))
+        if cfg.get("lang") in ["en", "fr", "de", "es", "it", "pt", "nl", "ja", "ko", "ru", "zh"]:
+            self.var_lang.set(cfg["lang"])
+        if cfg.get("region") in ["eu", "us", "jp", "wor"]:
+            self.var_region.set(cfg["region"])
         # Restore folder/system mapping
         # First restore the folder selection (folder list refreshed via var_dir trace)
         if cfg.get("folder_map_folder"):
@@ -542,11 +638,13 @@ class ScraperGUI(tk.Tk):
         cfg["ssh_port"]     = self.var_ssh_port.get().strip() or "22"
         cfg["ssh_user"]     = self.var_ssh_user.get().strip()
         cfg["ssh_keyfile"]  = self.var_ssh_keyfile.get().strip()
+        cfg["lang"]         = self.var_lang.get()
+        cfg["region"]       = self.var_region.get()
         save_config(cfg)
 
     def _clear_placeholder(self, widget, var):
         if widget.get() == self._PLACEHOLDER:
-            widget.config(foreground="black", show="")
+            widget.config(foreground=_CLR_FG, show="")
             widget.delete(0, "end")
 
     def _restore_placeholder(self, widget, var, text):
@@ -658,7 +756,7 @@ class ScraperGUI(tk.Tk):
             self._frm_ext_btns.pack_forget()
             self._ext_label.config(
                 text="Select a system above to see its extensions.",
-                foreground="#888888")
+                foreground=_CLR_FG_DIM)
             self._ext_label.pack(padx=8, pady=4)
             return
 
@@ -673,7 +771,7 @@ class ScraperGUI(tk.Tk):
             self._frm_ext_btns.pack_forget()
             self._ext_label.config(
                 text="No extensions found for this system in the database.",
-                foreground="#888888")
+                foreground=_CLR_FG_DIM)
             self._ext_label.pack(padx=8, pady=4)
             return
 
@@ -757,7 +855,7 @@ class ScraperGUI(tk.Tk):
             except Exception:
                 pass
             self._sftp_conn = None
-        self._lbl_ssh_status.config(text="● Not connected", foreground="#888888")
+        self._lbl_ssh_status.config(text="● Not connected", foreground=_CLR_FG_DIM)
         self._btn_ssh_connect.config(
             state="normal" if self.var_ssh_enabled.get() else "disabled")
         self._btn_ssh_disconnect.config(state="disabled")
@@ -862,7 +960,7 @@ class ScraperGUI(tk.Tk):
         self.btn_stop.config(state="normal")
         self.progress.start(12)
         self.lbl_status.config(text="Running…")
-        self.lbl_quota.config(text="Daily quota: —", foreground="#888888")
+        self.lbl_quota.config(text="Daily quota: —", foreground=_CLR_FG_DIM)
         self._log_clear()
         self._save_fields()
 
@@ -957,6 +1055,8 @@ class ScraperGUI(tk.Tk):
                     password=password,
                     devid=devid,
                     devpassword=devpass,
+                    lang=self.var_lang.get(),
+                    region=self.var_region.get(),
                 )
                 client.on_quota_update = _quota_cb
                 s = scraper.Scraper(

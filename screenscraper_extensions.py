@@ -203,7 +203,7 @@ SYSTEM_EXTENSIONS = {
      211: frozenset(["min", "zip"]),  # Pokémon mini
      213: frozenset(["dsk", "sad", "zip"]),  # MGT SAM Coupé
      214: frozenset(["pak", "zip"]),  # OpenBOR
-     215: frozenset(["z1", "z2", "z3", "z4", "z5", "z6", "z7", "z8", "zip"]),  # Z-Machine
+     215: frozenset(["z1", "z2", "z3", "z4", "z5", "z6", "z7", "z8", "zip", "dat"]),  # Z-Machine
      216: frozenset(["uze", "zip"]),  # Uzebox
      217: frozenset(["2mg", "do", "dsk", "gsplus", "hdv", "nib", "po", "zip"]),  # Apple IIGS
      218: frozenset(["bin", "cas", "dsk", "zip"]),  # Spectravideo
