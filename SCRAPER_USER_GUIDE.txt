@@ -155,6 +155,13 @@ OPTIONS
   Overwrite       Re-download files that already exist on disk.
                   Leave OFF to skip already-downloaded files (saves quota).
   Verbose log     Show detailed API calls and match information in the log.
+  ─────────────────────────────────────────────────────────────────────────────
+  Skip not found  Save quota by skipping previously not found metadata.
+  ─────────────────────────────────────────────────────────────────────────────
+  Info Language   Select preferred language for gamelist.xml.
+                  If an info in your selected language is not found, auto fallback to english
+  Region          Select preferred region for the games titles.
+                  Note that the scraper will look at the game name and if a region is defined in it, it will download the info                      for that region
 
 
 FOLDER → SYSTEM MAPPING
