@@ -167,7 +167,11 @@ class RemoteBrowserDialog(tk.Toplevel):
 class ScraperGUI(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("AGSG CCF FE Scraper")
+        try:
+            from scraper import SCRAPER_VERSION as _ver
+        except ImportError:
+            _ver = "?"
+        self.title(f"AGSG CCF FE Scraper  v{_ver}")
         self.resizable(True, True)
         self.minsize(820, 520)
         self.geometry("1200x740")
@@ -217,6 +221,13 @@ class ScraperGUI(tk.Tk):
         s.map("TCheckbutton",
               background=[("active", _CLR_BG)],
               foreground=[("disabled", _CLR_FG_DIM)])
+        s.configure("TNotebook",     background=_CLR_BG, borderwidth=0)
+        s.configure("TNotebook.Tab", background=_CLR_BG2, foreground=_CLR_FG,
+                                     padding=[12, 4])
+        s.map("TNotebook.Tab",
+              background=[("selected", _CLR_BG)],
+              foreground=[("selected", _CLR_FG)],
+              padding=[("selected", [12, 6])])
         s.configure("TSeparator",  background=_CLR_BORDER)
         s.configure("TScrollbar",
                     background=_CLR_BG2, troughcolor=_CLR_BG,
@@ -252,8 +263,15 @@ class ScraperGUI(tk.Tk):
         # Two-column layout: controls on the left, log on the right
         _outer = ttk.Frame(self)
         _outer.pack(fill="both", expand=True)
-        frm_left = ttk.Frame(_outer)
-        frm_left.pack(side="left", fill="y")
+        frm_left_wrap = ttk.Frame(_outer)
+        frm_left_wrap.pack(side="left", fill="y")
+        # Notebook: Tab 1 = scraper settings, Tab 2 = account credentials
+        notebook = ttk.Notebook(frm_left_wrap)
+        notebook.pack(fill="both", expand=True)
+        frm_left   = ttk.Frame(notebook)   # Tab 1 — Scraper
+        tab_accounts = ttk.Frame(notebook) # Tab 2 — Accounts
+        notebook.add(frm_left,    text="  Scraper  ")
+        notebook.add(tab_accounts, text="  Accounts  ")
         ttk.Separator(_outer, orient="vertical").pack(side="left", fill="y", padx=3)
         _frm_right_wrap = ttk.Frame(_outer)
         _frm_right_wrap.pack(side="left", fill="both", expand=True, padx=(0, 8), pady=8)
@@ -283,9 +301,9 @@ class ScraperGUI(tk.Tk):
         self._btn_browse = ttk.Button(frm_dir, text="Browse…", command=self._browse)
         self._btn_browse.pack(side="left", padx=(0, 6), pady=3)
 
-        # ---- Credentials ----
-        frm_cred = ttk.LabelFrame(frm_left, text="ScreenScraper account")
-        frm_cred.pack(fill="x", padx=10, pady=2)
+        # ---- Credentials (Tab 2) ----
+        frm_cred = ttk.LabelFrame(tab_accounts, text="ScreenScraper account")
+        frm_cred.pack(fill="x", padx=10, pady=(10, 2))
 
         # Left column: Username / Password
         ttk.Label(frm_cred, text="Username:").grid(row=0, column=0, sticky="e", **PAD)
@@ -336,6 +354,19 @@ class ScraperGUI(tk.Tk):
                         variable=self.var_remember).grid(
             row=2, column=3, columnspan=2, sticky="w", padx=6, pady=(2, 4))
 
+        # ---- RetroAchievements (Tab 2) ----
+        frm_ra = ttk.LabelFrame(tab_accounts, text="RetroAchievements (optional — for cheevos flag in gamelist)")
+        frm_ra.pack(fill="x", padx=10, pady=2)
+        ttk.Label(frm_ra, text="Username:").grid(row=0, column=0, sticky="e", **PAD)
+        self.var_ra_user = tk.StringVar()
+        ttk.Entry(frm_ra, textvariable=self.var_ra_user, width=22).grid(row=0, column=1, sticky="w", **PAD)
+        ttk.Label(frm_ra, text="Password:").grid(row=0, column=2, sticky="e", **PAD)
+        self.var_ra_key = tk.StringVar()
+        ttk.Entry(frm_ra, textvariable=self.var_ra_key, show="•", width=28).grid(row=0, column=3, sticky="w", **PAD)
+        ra_link = ttk.Label(frm_ra, text="Same credentials used in RetroArch",
+                            foreground=_CLR_FG_DIM)
+        ra_link.grid(row=1, column=0, columnspan=4, sticky="w", padx=6, pady=(0, 4))
+
         # ---- Options ----
         frm_opt = ttk.LabelFrame(frm_left, text="Options")
         frm_opt.pack(fill="x", padx=10, pady=2)
@@ -385,6 +416,18 @@ class ScraperGUI(tk.Tk):
             row=3, column=5, sticky="w", **_OP)
         ttk.Label(frm_opt, text="(for names/boxart/dates)",
                   foreground=_CLR_FG_DIM).grid(row=3, column=6, columnspan=2, sticky="w", **_OP)
+
+        ttk.Separator(frm_opt, orient="horizontal").grid(row=4, column=0, columnspan=8, sticky="ew", pady=(4, 2))
+        ttk.Label(frm_opt, text="Device profile:").grid(row=5, column=0, sticky="e", **_OP)
+        self.var_profile = tk.StringVar(value="gsg")
+        ttk.Combobox(frm_opt, textvariable=self.var_profile, width=9, state="readonly",
+                     values=["gsg", "gsp"]).grid(row=5, column=1, sticky="w", **_OP)
+        ttk.Label(frm_opt, text="Overlay base path:").grid(row=5, column=2, sticky="e", **_OP)
+        self.var_overlay_base = tk.StringVar(value="/mnt/sdcard/Games")
+        ttk.Entry(frm_opt, textvariable=self.var_overlay_base, width=36).grid(
+            row=5, column=3, columnspan=4, sticky="ew", **_OP)
+        ttk.Label(frm_opt, text="(path on device)",
+                  foreground=_CLR_FG_DIM).grid(row=5, column=7, sticky="w", **_OP)
 
         # ---- SSH (remote device) ----
         frm_ssh = ttk.LabelFrame(frm_left, text="SSH — scrape games folder on a remote device (optional)")
@@ -488,8 +531,8 @@ class ScraperGUI(tk.Tk):
         ttk.Button(self._frm_ext_btns, text="None", width=5,
                    command=lambda: self._ext_select_all(False)).pack(side="left")
 
-        # ---- Start / Stop buttons ----
-        frm_btn = ttk.Frame(frm_left)
+        # ---- Start / Stop buttons (outside notebook, always visible) ----
+        frm_btn = ttk.Frame(frm_left_wrap)
         frm_btn.pack(fill="x", padx=10, pady=2)
 
         self.btn_start = ttk.Button(frm_btn, text="▶  Start scraping",
@@ -505,8 +548,8 @@ class ScraperGUI(tk.Tk):
         self.lbl_status.pack(side="right")
 
         # ---- Progress bar ----
-        self.progress = ttk.Progressbar(frm_left, mode="indeterminate")
-        self.progress.pack(fill="x", padx=10, pady=(0, 2))
+        self.progress = ttk.Progressbar(frm_left_wrap, mode="indeterminate")
+        self.progress.pack(fill="x", padx=10, pady=(0, 4))
 
 
     # ---------------------------------------------------------------- logic --
@@ -533,6 +576,10 @@ class ScraperGUI(tk.Tk):
                 self._e_devpass.delete(0, "end")
                 self._e_devpass.insert(0, decoded)
         self.var_remember.set(cfg.get("remember", True))
+        if cfg.get("ra_user"):
+            self.var_ra_user.set(cfg["ra_user"])
+        if cfg.get("ra_key_enc"):
+            self.var_ra_key.set(decode_password(cfg["ra_key_enc"]))
         # Restore checkbox states
         for key in CHECKBOX_KEYS:
             val = cfg.get(f"opt_{key}")
@@ -542,6 +589,10 @@ class ScraperGUI(tk.Tk):
             self.var_lang.set(cfg["lang"])
         if cfg.get("region") in ["eu", "us", "jp", "wor"]:
             self.var_region.set(cfg["region"])
+        if cfg.get("overlay_base_path"):
+            self.var_overlay_base.set(cfg["overlay_base_path"])
+        if cfg.get("profile") in ["gsg", "gsp"]:
+            self.var_profile.set(cfg["profile"])
         # Restore folder/system mapping
         # First restore the folder selection (folder list refreshed via var_dir trace)
         if cfg.get("folder_map_folder"):
@@ -604,17 +655,19 @@ class ScraperGUI(tk.Tk):
             "devid":             devid,
             "devpass_enc":       encode_password(devpass),
             "remember":          True,
+            "ra_user":           self.var_ra_user.get().strip(),
+            "ra_key_enc":        encode_password(self.var_ra_key.get().strip()),
         }
         # Persist folder→system map (remembers every folder's last chosen system)
+        fsmap = self._cfg.get("folder_system_map", {})
+        if not isinstance(fsmap, dict):
+            fsmap = {}
         if folder_sel and folder_sel != "— all —" and sys_sel and sys_sel != "— auto —":
-            fsmap = cfg.get("folder_system_map", {})
-            if not isinstance(fsmap, dict):
-                fsmap = {}
             fsmap[folder_sel] = {
                 "display": sys_sel,
                 "id":      self._ss_display_to_id.get(sys_sel),
             }
-            cfg["folder_system_map"] = fsmap
+        cfg["folder_system_map"] = fsmap
         # Keep legacy single-pair keys for backwards compat
         cfg["folder_map_folder"]    = "" if folder_sel == "— all —"  else folder_sel
         cfg["folder_map_system"]    = "" if sys_sel    == "— auto —" else sys_sel
@@ -626,7 +679,7 @@ class ScraperGUI(tk.Tk):
         if self._ext_vars:
             sid = self._ss_display_to_id.get(self.var_sys_override.get())
             if sid is not None:
-                saved_map = cfg.get("ext_override", {})
+                saved_map = self._cfg.get("ext_override", {})
                 # migrate old single-system format
                 if isinstance(saved_map, dict) and "system_id" in saved_map:
                     saved_map = {str(saved_map["system_id"]): saved_map.get("exts", [])}
@@ -640,6 +693,8 @@ class ScraperGUI(tk.Tk):
         cfg["ssh_keyfile"]  = self.var_ssh_keyfile.get().strip()
         cfg["lang"]         = self.var_lang.get()
         cfg["region"]       = self.var_region.get()
+        cfg["overlay_base_path"] = self.var_overlay_base.get().strip()
+        cfg["profile"] = self.var_profile.get()
         save_config(cfg)
 
     def _clear_placeholder(self, widget, var):
@@ -1079,6 +1134,10 @@ class ScraperGUI(tk.Tk):
                     sftp_context=sftp_ctx,
                     sftp_remote_base=games_dir if sftp_ctx else None,
                     do_notfound_cache=self.var_notfound_cache.get(),
+                    overlay_base_path=self.var_overlay_base.get().strip(),
+                    profile=self.var_profile.get(),
+                    ra_user=self.var_ra_user.get().strip(),
+                    ra_key=self.var_ra_key.get().strip(),
                 )
                 s.run()
                 self._log_queue.put("\n✔ All done.\n")
