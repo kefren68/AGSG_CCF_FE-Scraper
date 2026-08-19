@@ -197,7 +197,7 @@ SYSTEM_EXTENSIONS = {
      205: frozenset(["bin", "c", "ctg", "dsk", "g","zip"]),  # TI-99/4A
      206: frozenset(["lua", "lutro", "zip"]),  # Lutro
      207: frozenset(["bin", "sv", "zip"]),  # Watara Supervision
-     208: frozenset(["2hd", "88d", "98d", "cmd", "d88", "d98", "dup", "fdd", "fdi", "hdd", "hdi", "hdm", "hdn", "nhd", "tfd", "thd", "xdf", "zip"]),  # NEC PC-9801
+     208: frozenset(["2hd", "88d", "98d", "cmd", "d88", "d98", "dup", "fdd", "fdi", "hdd", "hdi", "hdm", "hdn", "nhd", "tfd", "thd", "xdf", "zip","m3u"]),  # NEC PC-9801
      209: frozenset(["chd", "zip"]),  # Gottlieb
      210: frozenset(["sfc", "zip"]),  # Super Nintendo MSU-1
      211: frozenset(["min", "zip"]),  # Pokémon mini
